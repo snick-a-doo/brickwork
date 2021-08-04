@@ -1,5 +1,5 @@
 brickwork_sources = ['brickwork.cc', 'draw.cc', 'row.cc', 'main.cc']
-brickwork_app = executable('brick',
+brickwork_app = executable('brickwork',
                            brickwork_sources,
                            include_directories: brickwork_include)
 

@@ -16,6 +16,8 @@ public:
     int offset() const { return m_offset; }
     /// @return A vector of the repeated lengths.
     std::vector<int> const& pattern() const {return m_pattern; }
+    /// The total length of the repeated pattern.
+    int period() const;
 
     /// @return A text representation of the row. A brick is shown as a number of
     /// spaces equal to its length separated by |. The total length is 80 characters.

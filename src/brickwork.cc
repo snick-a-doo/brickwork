@@ -6,25 +6,19 @@
 std::vector<Row> generate(Row const& base)
 {
     std::vector<Row> gen_rows;
-
-    // Permute indices rather than elements so we start with the passed-in vector.
-    std::vector<std::size_t> indices(base.pattern().size());
-    std::iota(indices.begin(), indices.end(), 0u);
+    // Loop over permutations of the base pattern.
+    auto pat {base.pattern()};
+    std::sort(pat.begin(), pat.end());
     do
     {
         // Don't generate a row with an offset longer than the base row's 1st brick.
         for (auto offset {0}; offset < base.pattern().front(); ++offset)
         {
-            // Make the permuted pattern of lengths.
-            std::vector<int> pat;
-            for (auto i : indices)
-                pat.push_back(base.pattern()[i]);
-
             Row row {offset, pat};
             if (is_brickwork(base, row))
                 gen_rows.push_back(row);
         }
-    } while(std::next_permutation(indices.begin(), indices.end()));
+    } while(std::next_permutation(pat.begin(), pat.end()));
 
     // Put the rows in ascending order by offset, 1st brick, 2nd brick,... and remove
     // duplicates.
@@ -36,21 +30,18 @@ std::vector<Row> generate(Row const& base)
 
 bool is_brickwork(Row const& lower, Row const& upper)
 {
-    auto const b1 {lower.offset()};
-    auto const& p1 {lower.pattern()};
-    auto const b2 {upper.offset()};
-    auto const& p2 {upper.pattern()};
-
-    if (p1.empty() || p2.empty())
+    if (lower.period() <= 0 || upper.period() <= 0)
         return false;
 
     // The two-row pattern repeats after the least common multiple of the total lengths of
     // the pattern. If there are no aligned gaps by that point, there will be no aligned
     // gaps.
-    auto const sum1 {std::accumulate(p1.begin(), p1.end(), 0)};
-    auto const sum2 {std::accumulate(p2.begin(), p2.end(), 0)};
-    auto const n_to_check {std::lcm(sum1, sum2)};
+    auto const n_to_check {std::lcm(lower.period(), upper.period())};
+    auto const b1 {lower.offset()};
+    auto const b2 {upper.offset()};
 
+    auto const& p1 {lower.pattern()};
+    auto const& p2 {upper.pattern()};
     auto x1 {b1};
     auto x2 {b2};
     auto i1 {0u};

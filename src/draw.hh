@@ -6,7 +6,7 @@
 #include <filesystem>
 #include <vector>
 
-void draw_wall(std::filesystem::path const& file, int const width,
-               Row const& base, std::vector<Row> const& rows, int n_reps);
+void svg_wall(std::filesystem::path const& file, int const width,
+              Row const& base, std::vector<Row> const& rows, int n_reps);
 
 #endif

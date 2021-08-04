@@ -3,7 +3,6 @@
 
 #include "simple_svg_1.0.0.hpp"
 
-#include <algorithm>
 #include <optional>
 
 namespace fs = std::filesystem;
@@ -51,8 +50,8 @@ svg::Document& draw_row(svg::Document& st_svg, Row const& row, int y, int max_wi
     return st_svg;
 }
 
-void draw_wall(fs::path const& file, int const wall_width, Row const& base,
-               std::vector<Row> const& bw_rows, int n_reps)
+void svg_wall(fs::path const& file, int const wall_width, Row const& base,
+              std::vector<Row> const& bw_rows, int n_reps)
 {
     auto const rows_per_wall = 2*n_reps;
     // The total number of rows includes a separator row between each wall.
