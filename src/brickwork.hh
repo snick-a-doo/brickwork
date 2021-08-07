@@ -1,7 +1,7 @@
 #ifndef BRICKWORK_HH
 #define BRICKWORK_HH
 
-#include "row.hh"
+#include "wall.hh"
 
 #include <vector>
 
@@ -10,6 +10,6 @@ bool is_brickwork(Row const& lower, Row const& upper);
 
 // Return a vector of all brick rows that form a brickwork with the argument by varying
 // the offset, and permuting the pattern.
-std::vector<Row> generate(Row const& row);
+std::vector<Wall> generate(Row const& row1, Row const& row2);
 
 #endif // BRICKWORK_HH

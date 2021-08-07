@@ -1,15 +1,13 @@
 #include "draw.hh"
-#include "row.hh"
 
 #include "simple_svg_1.0.0.hpp"
 
 #include <optional>
 
-namespace fs = std::filesystem;
-
 auto constexpr height_unit {18}; // Rendered length of a brick of length 1.
 auto constexpr length_unit {20}; // Rendered height of a brick.
 auto constexpr gap {2};          // Size of the mortar gap between bricks.
+auto constexpr row_height {height_unit + gap};
 
 // The color of the optional initial brick.
 auto const offset_color {svg::Color(80, 80, 80)};
@@ -39,7 +37,8 @@ svg::Document& draw_row(svg::Document& st_svg, Row const& row, int y, int max_wi
         draw_brick(st_svg, x, y, row.offset(), offset_color);
         x += row.offset()*length_unit + gap;
     }
-    while (x < max_width)
+    // Add 1 to avoid anti-aliasing artifacts at the edge.
+    while (x < max_width + 1)
     {
         for (auto p : row.pattern())
         {
@@ -50,29 +49,40 @@ svg::Document& draw_row(svg::Document& st_svg, Row const& row, int y, int max_wi
     return st_svg;
 }
 
-void svg_wall(fs::path const& file, int const wall_width, Row const& base,
-              std::vector<Row> const& bw_rows, int n_reps)
+svg::Document& draw_wall(svg::Document& st_svg, Wall const& rows,
+                         int y, int width, int n_rows)
 {
-    auto const rows_per_wall = 2*n_reps;
-    // The total number of rows includes a separator row between each wall.
-    auto const total_rows {(rows_per_wall + 1)*bw_rows.size() - 1};
-    auto const row_spacing = height_unit + gap; // Distance from one row to the next.
-    auto const height {total_rows*row_spacing};
-    svg::Document st_svg(file, svg::Layout(svg::Dimensions(wall_width, height),
-                                           svg::Layout::TopLeft));
-    st_svg << svg::Rectangle(svg::Point(0, 0), wall_width, height, mortar_color);
-
-    auto y {0};
-    for (auto const& row : bw_rows)
+    for (int i {0}; i < n_rows; )
     {
-        for (int i = 0; i < n_reps; ++i)
+        for (auto const& row : rows)
         {
-            draw_row(st_svg, row, y, wall_width);
-            y += height_unit + gap;
-            draw_row(st_svg, base, y, wall_width);
-            y += height_unit + gap;
+            draw_row(st_svg, row, y, width);
+            y += row_height;
+            if (++i >= n_rows)
+                break;
         }
-        y += height_unit + gap;
+    }
+    return st_svg;
+}
+
+svg::Document svg_stream(std::string const& file, int width, int height)
+{
+    svg::Document st_svg(file, svg::Layout(svg::Dimensions(width, height),
+                                           svg::Layout::TopLeft));
+    // Add 1 to width and height to avoid anti-aliasing artifacts.
+    return st_svg << svg::Rectangle(svg::Point(0, 0), width + 1, height + 1, mortar_color);
+}
+
+void svg_walls(std::string const& file,
+               int const width, std::vector<Wall> const& walls, int n_rows)
+{
+    // The total number of rows includes a separator row between each wall.
+    auto const total_rows {walls.empty() ? 0 : (n_rows + 1)*walls.size() - 1};
+    auto st_svg {svg_stream(file, width, total_rows*row_height)};
+    for (int y {0}; auto const& wall : walls)
+    {
+        draw_wall(st_svg, wall, y, width, n_rows);
+        y += (n_rows + 1)*row_height;
     }
     st_svg.save();
 }

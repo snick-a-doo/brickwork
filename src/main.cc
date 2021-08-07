@@ -1,6 +1,6 @@
 #include "brickwork.hh"
 #include "draw.hh"
-#include "row.hh"
+#include "wall.hh"
 
 #include <iostream>
 #include <vector>
@@ -14,7 +14,7 @@ static constexpr auto usage {
     "\tthe first brick in the base pattern.\n"
     "\n"};
 
-void ascii_wall(Row const& base, std::vector<Row>& bw_rows)
+void ascii_wall(Row const& base, Wall& bw_rows)
 {
     for (auto const& row : bw_rows)
         std::cout << base << '\n' << row << "\n\n";
@@ -28,14 +28,15 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    std::vector<int> pattern;
-    for (int i = 1; i < argc; ++i)
-        pattern.push_back(std::atoi(argv[i]));
+    std::vector<int> pat1;
+    std::vector<int> pat2;
+    auto i {1};
+    for (; i < argc && std::atoi(argv[i]) > 0; ++i)
+        pat1.push_back(std::atoi(argv[i]));
+    for (++i; i < argc; ++i)
+        pat2.push_back(std::atoi(argv[i]));
 
-    Row base(0, pattern);
-    std::vector<Row> bw_rows = generate(base);
-    std::cout << bw_rows.size() << std::endl;
-    svg_wall("brickwork.svg", 600, base, bw_rows, 4);
-    ascii_wall(base, bw_rows);
+    auto walls = generate(Row{0, pat1}, pat2.empty() ? Row{0, pat1} : Row{0, pat2});
+    svg_walls("brickwork.svg", 600, walls, 8);
     return 0;
 }

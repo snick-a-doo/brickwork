@@ -35,4 +35,6 @@ private:
 /// Send the string representation to the stream.
 std::ostream& operator <<(std::ostream& os, Row const& row);
 
+using Wall = std::vector<Row>;
+
 #endif // ROW_HH

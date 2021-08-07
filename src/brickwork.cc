@@ -3,11 +3,11 @@
 #include <algorithm>
 #include <numeric>
 
-std::vector<Row> generate(Row const& base)
+std::vector<Wall> generate(Row const& base, Row const& row2)
 {
-    std::vector<Row> gen_rows;
+    Wall gen_rows;
     // Loop over permutations of the base pattern.
-    auto pat {base.pattern()};
+    auto pat {row2.pattern()};
     std::sort(pat.begin(), pat.end());
     do
     {
@@ -25,7 +25,10 @@ std::vector<Row> generate(Row const& base)
     std::sort(gen_rows.begin(), gen_rows.end());
     auto last {std::unique(gen_rows.begin(), gen_rows.end())};
     gen_rows.erase(last, gen_rows.end());
-    return gen_rows;
+    std::vector<Wall> walls;
+    for (auto const& row : gen_rows)
+        walls.push_back({base, row});
+    return walls;
 }
 
 bool is_brickwork(Row const& lower, Row const& upper)
