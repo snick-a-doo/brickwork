@@ -22,21 +22,18 @@ void ascii_wall(Row const& base, Wall& bw_rows)
 
 int main(int argc, char* argv[])
 {
-    if (argc < 2)
-    {
-        std::cerr << usage;
-        return 1;
-    }
+    auto n_rows{2};
+    auto n_bricks{2};
+    auto widest_brick{2};
+    if (argc > 1)
+        n_rows = std::atoi(argv[1]);
+    if (argc > 2)
+        n_bricks = std::atoi(argv[2]);
+    if (argc > 3)
+        widest_brick = std::atoi(argv[3]);
 
-    std::vector<int> pat1;
-    std::vector<int> pat2;
-    auto i {1};
-    for (; i < argc && std::atoi(argv[i]) > 0; ++i)
-        pat1.push_back(std::atoi(argv[i]));
-    for (++i; i < argc; ++i)
-        pat2.push_back(std::atoi(argv[i]));
-
-    auto walls = generate(Row{0, pat1}, pat2.empty() ? Row{0, pat1} : Row{0, pat2});
+    auto walls {generate(n_rows, n_bricks, widest_brick)};
+    std::cout << walls.size() << std::endl;
     svg_walls("brickwork.svg", 600, walls, 8);
     return 0;
 }

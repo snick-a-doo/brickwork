@@ -23,15 +23,20 @@ bool test_is_brickwork(Row const& r1, Row const& r2)
 
 void CHECK_BW(Wall const& wall, bool is = true)
 {
-    assert(wall.size() == 2);
-    auto const& r1 = wall.front();
-    auto const& r2 = wall.back();
-    auto test_bw = test_is_brickwork(r1, r2);
-    auto bw = is_brickwork(r1, r2);
-    CHECK(test_bw == bw);
-    CHECK(test_bw == is);
-    if (test_bw != bw || test_bw != is)
-        std::cerr << r1 << '\n' << r2 << '\n';
+    for (std::size_t i{0}; i < wall.size(); ++i)
+    {
+        auto const& r1 = wall[i];
+        auto const& r2 = wall[(i + 1) % wall.size()];
+        auto test_bw = test_is_brickwork(r1, r2);
+        auto bw = is_brickwork(r1, r2);
+        CHECK(test_bw == bw);
+        CHECK(test_bw == is);
+        if (test_bw != bw || test_bw != is)
+        {
+            std::cerr << r1 << '\n' << r2 << '\n';
+            return;
+        }
+    }
 }
 
 TEST_CASE("empty rows")
@@ -57,6 +62,7 @@ TEST_CASE("too much offset")
     CHECK_BW({Row(0,{2}), Row(2,{2})}, false); // not interlocked
     CHECK_BW({Row(2,{2}), Row(0,{2})}, false); // not interlocked
     CHECK_BW({Row(0,{3,1}), Row(1,{3,1})}, false);
+    CHECK_BW({Row(1,{1,4}), Row(3,{4,1})}, false);
 }
 
 TEST_CASE("equal offset")
@@ -87,34 +93,37 @@ TEST_CASE("flemish bond")
     CHECK_BW({Row{0, {3,1}}, Row{1, {1,3}}});
 }
 
-TEST_CASE("generate staggered")
+TEST_CASE("generate")
 {
-    auto base = Row{0, {2}};
-    auto bw = generate(base, base);
-    CHECK(bw.size() == 1);
-    CHECK(bw[0][1] == Row{1, {2}});
-    for (auto const& b : bw)
-        CHECK_BW(b);
-}
+    std::vector<Wall> walls;
+    SUBCASE("width 2")
+    {
+        walls = generate(2, 1, 2);
+        CHECK(walls.size() == 1);
+        CHECK(walls[0][1] == Row{1, {2}});
+    }
+    SUBCASE("width 4")
+    {
+        walls = generate(2, 1, 4);
+        // 1 wall with width 2 + 2 with width 3 + 3 with width 4
+        CHECK(walls.size() == 6);
+    }
+    SUBCASE("2 from 1 to 3")
+    {
+        walls = generate(2, 2, 3);
+        CHECK(walls.size() == 9);
+    }
+    SUBCASE("3 from 1 to 3")
+    {
+        walls = generate(2, 3, 3);
+        CHECK(walls.size() == 30);
+    }
+    SUBCASE("3 rows, 2 bricks from 1 to 4")
+    {
+        walls = generate(3, 2, 4);
+        CHECK(walls.size() == 26);
+    }
 
-TEST_CASE("generate flemish")
-{
-    auto base = Row{0, {3,1}};
-    auto bw = generate(base, base);
-    CHECK(bw.size() == 2);
-    CHECK(bw[0][1] == Row{1, {1,3}});
-    CHECK(bw[1][1] == Row{2, {3,1}});
-    for (auto const& b : bw)
-        CHECK_BW(b);
-}
-
-TEST_CASE("remove duplicates")
-{
-    auto base = Row{0, {2,3,3,2,2}};
-    auto bw = generate(base, base);
-    // 36 rows if bricks of the same length are distinguishable. Only 3 when we treat them
-    // as identical.
-    CHECK(bw.size() == 3);
-    for (auto const& b : bw)
-        CHECK_BW(b);
+    for (auto const& w : walls)
+        CHECK_BW(w);
 }
