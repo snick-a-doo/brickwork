@@ -49,6 +49,6 @@ int main(int argc, char* argv[])
 
     auto walls {generate(n_rows, n_bricks, widest_brick)};
     std::cout << walls.size() << std::endl;
-    svg_walls("brickwork.svg", 600, walls, 8);
+    svg_walls("brickwork.svg", 300, walls, 8);
     return 0;
 }

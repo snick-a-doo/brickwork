@@ -120,23 +120,22 @@ TEST_CASE("generate")
     SUBCASE("width 4")
     {
         walls = generate(2, 1, 4);
-        // 1 wall with width 2 + 2 with width 3 + 3 with width 4
-        CHECK(walls.size() == 6);
+        CHECK(walls.size() == 5);
     }
     SUBCASE("2 from 1 to 3")
     {
         walls = generate(2, 2, 3);
-        CHECK(walls.size() == 9);
+        CHECK(walls.size() == 8);
     }
     SUBCASE("3 from 1 to 3")
     {
         walls = generate(2, 3, 3);
-        CHECK(walls.size() == 30);
-    }
-    SUBCASE("3 rows, 2 bricks from 1 to 4")
-    {
-        walls = generate(3, 2, 4);
         CHECK(walls.size() == 26);
+    }
+    SUBCASE("4 rows, 2 bricks from 1 to 4")
+    {
+        walls = generate(4, 2, 4);
+        CHECK(walls.size() == 345);
     }
 
     for (auto const& w : walls)

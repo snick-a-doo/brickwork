@@ -39,48 +39,29 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
         return false;
     };
 
-    // True if contiguous groups of n elements sum to the same value. The size of v must
-    // be a multiple of n.
-    auto sum_equal = [](std::vector<int> const& v, int n) {
-        assert(!v.empty() && v.size() % n == 0);
-        auto sum {std::accumulate(v.cbegin(), v.cbegin() + n, 0)};
-        for (auto it {v.cbegin() + n}; it != v.cend(); it += n)
-            if (std::accumulate(it, it + n, 0) != sum)
-                return false;
-        return true;
-    };
-
     // Iterate over a flat vector of all the brick widths.
     std::vector<int> widths(n_rows*n_bricks, 1);
     do
     {
-        // If total brick length isn't the same in all, the rows will get out of sync
-        // because of the different number of gaps per unit length.
-        if (!sum_equal(widths, n_bricks))
-            continue;
-        std::vector<int> offsets(n_rows - 1, 1);
-        do
+        Wall wall{Row{0, std::vector(widths.cbegin(), widths.cbegin() + n_bricks)}};
+        for (auto row_num{1}; row_num < n_rows; ++row_num)
         {
-            Wall wall{Row{0, std::vector(widths.cbegin(), widths.cbegin() + n_bricks)}};
-            for (auto row_num{1}; row_num < n_rows; ++row_num)
+            Row row{row_num % 2,
+                std::vector(widths.cbegin() + row_num*n_bricks,
+                            widths.cbegin() + (row_num + 1)*n_bricks)};
+            // Add this row if it fits with the previous row.
+            if (is_brickwork(row, wall.back()))
             {
-                Row row{offsets[row_num - 1],
-                    std::vector(widths.cbegin() + row_num*n_bricks,
-                                widths.cbegin() + (row_num + 1)*n_bricks)};
-                // Add this row if it fits with the previous row.
-                if (is_brickwork(row, wall.back()))
-                {
-                    wall.push_back(row);
-                    if (static_cast<int>(wall.size()) == n_rows)
-                        break;
-                }
+                wall.push_back(row);
+                if (static_cast<int>(wall.size()) == n_rows)
+                    break;
             }
-            // Add the wall if we found enough rows and the 1st row its on top of the last
-            // row.
-            if (static_cast<int>(wall.size()) == n_rows
-                && is_brickwork(wall.front(), wall.back()))
-                walls.push_back(wall);
-        } while (increment(offsets, 1, widths.front() - 1));
+        }
+        // Add the wall if we found enough rows and the 1st row fits on top of the last
+        // row.
+        if (static_cast<int>(wall.size()) == n_rows
+            && is_brickwork(wall.front(), wall.back()))
+            walls.push_back(wall);
     } while (increment(widths, 1, widest_brick));
     return walls;
 }
