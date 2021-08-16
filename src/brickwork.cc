@@ -43,12 +43,13 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
     std::vector<int> widths(n_rows*n_bricks, 1);
     do
     {
-        Wall wall{Row{0, std::vector(widths.cbegin(), widths.cbegin() + n_bricks)}};
+        // Use revere iterators to place most significant (slowest changing) bricks first.
+        Wall wall{Row{0, std::vector(widths.crbegin(), widths.crbegin() + n_bricks)}};
         for (auto row_num{1}; row_num < n_rows; ++row_num)
         {
             Row row{row_num % 2,
-                std::vector(widths.cbegin() + row_num*n_bricks,
-                            widths.cbegin() + (row_num + 1)*n_bricks)};
+                std::vector(widths.crbegin() + row_num*n_bricks,
+                            widths.crbegin() + (row_num + 1)*n_bricks)};
             // Add this row if it fits with the previous row.
             if (is_brickwork(row, wall.back()))
             {
@@ -64,6 +65,32 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
             walls.push_back(wall);
     } while (increment(widths, 1, widest_brick));
     return walls;
+}
+
+int num_brickworks(int n_rows, int n_bricks, int widest_brick)
+{
+    assert(n_rows == 2 && "Calculation has not been generalized.");
+    assert(n_bricks == 2 && "Calculation has not been generalized.");
+
+    // True if 1-x1, 1+y1, 1-x1+y1 are not multiples of gcd(x1+x2, y1+y2)
+    auto is_wall = [](int x1, int x2, int y1, int y2) {
+        auto d{std::gcd(x1+x2, y1+y2)};
+        for (auto a : {1-x1, 1+y1, 1-x1+y1})
+            if (a % d == 0)
+                return false;
+        return true;
+    };
+
+    auto out{0};
+    std::vector<int> is(widest_brick);
+    std::iota(is.begin(), is.end(), 1);
+    for (auto x1 : is)
+        for (auto x2 : is)
+            for (auto y1 : is)
+                for (auto y2 : is)
+                    if (is_wall(x1, x2, y1, y2))
+                        ++out;
+    return out;
 }
 
 bool is_brickwork(Row const& lower, Row const& upper)

@@ -18,10 +18,15 @@
 
 #include "wall.hh"
 
+#include <iosfwd>
 #include <string>
 #include <vector>
 
+/// Render an SVG image of the walls to file.
 void svg_walls(std::string const& file, int const width, std::vector<Wall> const& walls,
-               int n_rows);
+               int n_courses);
+
+/// Send an ASCII rendering of the wall to the stream.
+std::ostream& ascii_walls(std::ostream& os, std::vector<Wall> const& walls, int n_courses);
 
 #endif

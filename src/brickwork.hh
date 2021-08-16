@@ -28,4 +28,8 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick);
 /// @return True if the two rows don't have any gaps that line up.
 bool is_brickwork(Row const& lower, Row const& upper);
 
+/// @return Calculated number of brickworks. Currently only implemented for 2 rows and 2
+/// bricks. These values are asserted.
+int num_brickworks(int n_rows, int n_bricks, int widest_brick);
+
 #endif // BRICKWORK_HH

@@ -64,11 +64,12 @@ svg::Document& draw_row(svg::Document& st_svg, Row const& row, int y, int max_wi
     return st_svg;
 }
 
-svg::Document& draw_wall(svg::Document& st_svg, Wall const& rows,
-                         int y, int width, int n_rows)
+svg::Document& draw_wall(svg::Document& st_svg, Wall const& courses,
+                         int y, int width, int n_courses)
 {
-    for (auto i{0}; i < n_rows; ++i, y += row_height)
-        draw_row(st_svg, rows[i % rows.size()], y, width);
+    // Draw the courses backwards so the base is a the bottom (largest y coordinate).
+    for (auto i{n_courses}; i-- > 0; y += row_height)
+        draw_row(st_svg, courses[i % courses.size()], y, width);
     return st_svg;
 }
 
@@ -81,15 +82,26 @@ svg::Document svg_stream(std::string const& file, int width, int height)
 }
 
 void svg_walls(std::string const& file,
-               int const width, std::vector<Wall> const& walls, int n_rows)
+               int const width, std::vector<Wall> const& walls, int n_courses)
 {
     // The total number of rows includes a separator row between each wall.
-    auto const total_rows {walls.empty() ? 0 : (n_rows + 1)*walls.size() - 1};
+    auto const total_rows {walls.empty() ? 0 : (n_courses + 1)*walls.size() - 1};
     auto st_svg{svg_stream(file, width, total_rows*row_height)};
     for (int y{0}; auto const& wall : walls)
     {
-        draw_wall(st_svg, wall, y, width, n_rows);
-        y += (n_rows + 1)*row_height;
+        draw_wall(st_svg, wall, y, width, n_courses);
+        y += (n_courses + 1)*row_height;
     }
     st_svg.save();
+}
+
+std::ostream& ascii_walls(std::ostream& os, std::vector<Wall> const& walls, int n_courses)
+{
+    for (auto const& wall : walls)
+    {
+        for (int i{n_courses}; i-- > 0;)
+            os << wall[i % wall.size()] << '\n';
+        os << '\n';
+    }
+    return os;
 }

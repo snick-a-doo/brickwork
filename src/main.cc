@@ -17,38 +17,116 @@
 #include "draw.hh"
 #include "wall.hh"
 
+#include <getopt.h>
+
+#include <fstream>
 #include <iostream>
+#include <optional>
 #include <vector>
 
-static constexpr auto usage {
-    "Usage: brickwork l1 l2 ...\n"
-    "\twhere l1 l2 ... are the lengths bricks repeated in the bottom row of a wall.\n"
-    "\n"
-    "Output: An SVG file 'brickwork.svg' that displays the unique brick patterns that\n"
-    "\tcan be formed by permuting the base pattern and applying an offset shorter than\n"
-    "\tthe first brick in the base pattern.\n"
-    "\n"};
+auto constexpr info{
+    "Brickwork: Brick pattern genereator\n"
+    "Version 0.3.0 © 2021 Sam Varner GPL3\n"
+    "https://github.com/snick-a-doo/brickwork\n"
+};
 
-void ascii_wall(Row const& base, Wall& bw_rows)
+auto constexpr usage{
+    "\nUsage: Brickwork [options] [courses] [bricks] [max_brick]\n"
+    "    -a --ascii   Render ASCII walls to standard output or, if --output or -o is\n"
+    "                 specified, a text file.\n"
+    "    -c --count   Output the number of walls. Nothing is rendered, even if other\n"
+    "                  output-related options are given.\n"
+    "    -h --help    Display this message and exit.\n"
+    "    -o --output= File name for the rendering sans extension. Defaults to\n"
+    "                 'brickwork'. An extension is appended, .svg or .txt, depending\n"
+    "                 on other options.\n"
+    "\n"
+    "    courses      The number of repeated rows of bricks. Must be even.\n"
+    "    bricks       The number of repeated bricks in each course.\n"
+    "    max_brick    The maximum brick width.\n"
+    "\n"
+    "If neither --ascii nor --count is given, an SVG image file is produced.\n"
+};
+
+struct Options
 {
-    for (auto const& row : bw_rows)
-        std::cout << base << '\n' << row << "\n\n";
+    int n_rows{2};
+    int n_bricks{2};
+    int widest_brick{2};
+    bool render{true};
+    bool ascii{false};
+    std::optional<std::string> output;
+};
+
+Options read_options(int argc, char** argv)
+{
+    Options opt;
+    while (true)
+    {
+        static struct option options[] = {
+            {"ascii", no_argument, nullptr, 'a'},
+            {"count-only", no_argument, nullptr, 'c'},
+            {"output", required_argument, nullptr, 'o'},
+            {"help", no_argument, nullptr, 'h'},
+            {0, 0, 0, 0}};
+        int index;
+        auto c{getopt_long(argc, argv, "aco:h", options, &index)};
+        if (c == -1)
+            break;
+        switch (c)
+        {
+        case 0:
+            break;
+        case 'a':
+            opt.ascii = true;
+            break;
+        case 'c':
+            opt.render = false;
+            break;
+        case 'o':
+            opt.output = optarg;
+            break;
+        case 'h':
+            std::cerr << info << std::endl;
+            [[fallthrough]];
+        default:
+            std::cerr << usage << std::endl;
+            exit(c == 'h' ? 0 : 1);
+        }
+    }
+
+    if (optind < argc) opt.n_rows = std::atoi(argv[optind++]);
+    if (optind < argc) opt.n_bricks = std::atoi(argv[optind++]);
+    if (optind < argc) opt.widest_brick = std::atoi(argv[optind++]);;
+    return opt;
 }
 
 int main(int argc, char* argv[])
 {
-    auto n_rows{2};
-    auto n_bricks{2};
-    auto widest_brick{2};
-    if (argc > 1)
-        n_rows = std::atoi(argv[1]);
-    if (argc > 2)
-        n_bricks = std::atoi(argv[2]);
-    if (argc > 3)
-        widest_brick = std::atoi(argv[3]);
+    auto const opt{read_options(argc, argv)};
 
-    auto walls {generate(n_rows, n_bricks, widest_brick)};
+    if (!opt.render && opt.n_rows == 2 && opt.n_bricks == 2)
+    {
+        // Use the fast counting algorithm if 2 courses of 2 bricks.
+        std::cout << num_brickworks(opt.n_rows, opt.n_bricks, opt.widest_brick) << std::endl;
+        return 0;
+    }
+    auto walls{generate(opt.n_rows, opt.n_bricks, opt.widest_brick)};
     std::cout << walls.size() << std::endl;
-    svg_walls("brickwork.svg", 300, walls, 8);
+    if (!opt.render)
+        return 0;
+
+    if (opt.ascii)
+    {
+        if (opt.output)
+        {
+            std::ofstream os{*opt.output};
+            ascii_walls(os, walls, 8);
+        }
+        else
+            ascii_walls(std::cout, walls, 8);
+    }
+    else
+        svg_walls((opt.output ? *opt.output : "brickwork") + ".svg", 300, walls, 8);
     return 0;
 }
