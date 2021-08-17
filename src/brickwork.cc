@@ -19,25 +19,26 @@
 #include <cassert>
 #include <numeric>
 
+// Increment the 1st element. Overflow to min and carry if max is exceeded.
+bool increment(std::vector<int>& v, int min, int max)
+{
+    for (auto& x : v)
+    {
+        if (x < max)
+        {
+            ++x;
+            return true;
+        }
+        x = min;
+    }
+    return false;
+}
+
 std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
 {
     std::vector<Wall> walls;
     if (n_rows < 2 || n_bricks < 1 || widest_brick < 2)
         return walls;
-
-    // Increment the 1st element. Overflow to min and carry if max is exceeded.
-    auto increment = [](std::vector<int>& v, int min, int max) {
-        for (auto& x : v)
-        {
-            if (x < max)
-            {
-                ++x;
-                return true;
-            }
-            x = min;
-        }
-        return false;
-    };
 
     // Iterate over a flat vector of all the brick widths.
     std::vector<int> widths(n_rows*n_bricks, 1);
@@ -66,30 +67,38 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
     } while (increment(widths, 1, widest_brick));
     return walls;
 }
-
+#include <iostream>
 int num_brickworks(int n_rows, int n_bricks, int widest_brick)
 {
     assert(n_rows == 2 && "Calculation has not been generalized.");
-    assert(n_bricks == 2 && "Calculation has not been generalized.");
 
-    // True if 1-x1, 1+y1, 1-x1+y1 are not multiples of gcd(x1+x2, y1+y2)
-    auto is_wall = [](int x1, int x2, int y1, int y2) {
-        auto d{std::gcd(x1+x2, y1+y2)};
-        for (auto a : {1-x1, 1+y1, 1-x1+y1})
-            if (a % d == 0)
-                return false;
+    auto is_wall = [](std::vector<int> const& xs, std::vector<int> const& ys) {
+        auto X{std::accumulate(xs.begin(), xs.end(), 0)};
+        auto Y{std::accumulate(ys.begin(), ys.end(), 0)};
+        auto const d{std::gcd(X, Y)};
+        std::size_t i{0};
+
+        for (auto x{0}; i < xs.size(); x += xs[i++])
+        {
+            std::size_t j{0};
+            for (auto y{0}; j < ys.size(); y += ys[j++])
+                if ((1 - x + y) % d == 0)
+                    return false;
+        }
         return true;
     };
 
     auto out{0};
-    std::vector<int> is(widest_brick);
-    std::iota(is.begin(), is.end(), 1);
-    for (auto x1 : is)
-        for (auto x2 : is)
-            for (auto y1 : is)
-                for (auto y2 : is)
-                    if (is_wall(x1, x2, y1, y2))
-                        ++out;
+    std::vector<int> x_widths(n_bricks, 1);
+    do
+    {
+        std::vector<int> y_widths(n_bricks, 1);
+        do
+        {
+            if (is_wall(x_widths, y_widths))
+                ++out;
+        } while (increment(y_widths, 1, widest_brick));
+    } while (increment(x_widths, 1, widest_brick));
     return out;
 }
 
