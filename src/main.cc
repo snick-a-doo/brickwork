@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 {
     auto const opt{read_options(argc, argv)};
 
-    if (!opt.render && opt.n_rows == 2 && opt.n_bricks == 2)
+    if (!opt.render && opt.n_rows == 2)
     {
         // Use the fast counting algorithm if 2 courses of 2 bricks.
         std::cout << num_brickworks(opt.n_rows, opt.n_bricks, opt.widest_brick) << std::endl;

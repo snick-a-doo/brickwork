@@ -141,3 +141,16 @@ TEST_CASE("generate")
     for (auto const& w : walls)
         CHECK_BW(w);
 }
+
+TEST_CASE("count")
+{
+    std::array const n_22i = { 0, 0, 1, 8, 33, 68, 193, 296, 615, 928, 1543 };
+    std::array const n_23i = { 0, 0, 1, 26, 201, 744, 3003, 6736, 17599, 34738, 71877 };
+    for (int i{1}; i <= 10; ++i)
+    {
+        CHECK(static_cast<int>(static_cast<int>(generate(2, 2, i).size()) == n_22i[i]));
+        CHECK(static_cast<int>(num_brickworks(2, 2, i) == n_22i[i]));
+        CHECK(static_cast<int>(static_cast<int>(generate(2, 3, i).size()) == n_23i[i]));
+        CHECK(static_cast<int>(num_brickworks(2, 3, i) == n_23i[i]));
+    }
+}

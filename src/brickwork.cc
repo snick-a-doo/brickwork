@@ -19,19 +19,55 @@
 #include <cassert>
 #include <numeric>
 
-// Increment the 1st element. Overflow to min and carry if max is exceeded.
-bool increment(std::vector<int>& v, int min, int max)
+// A multi-place counter with a limited container-like interface.
+class Counter
 {
-    for (auto& x : v)
+public:
+    // Initialize all digits of to n-place counter to the low value.
+    Counter(int n, int low, int high)
+        : m_low{low}, m_high{high}, m_sum{n*low}, m_v(n, low)
+    {}
+
+    // Increment the least significant place, possibly carrying or overflowing. This is
+    // the only way to change the count.
+    Counter& operator++();
+    // @return The sum of the digits.
+    int sum() const { return m_sum; }
+    // @return True if the counter has wrapped around to its initial state.
+    bool overflow() const { return m_overflow; }
+
+    // The container interface.
+    std::size_t size() const { return m_v.size(); }
+    auto operator[](std::size_t i) const { return m_v[i]; }
+    auto begin() const { return m_v.begin(); }
+    auto end() const { return m_v.end(); }
+    auto rbegin() const { return m_v.rbegin(); }
+    auto rend() const { return m_v.rend(); }
+
+private:
+    int const m_low;  // The lowest value of a digit.
+    int const m_high; // The highest value of a digit.
+    int m_sum;  // The sum of the digits.
+    bool m_overflow{false}; // True if the counter has wrapped.
+    std::vector<int> m_v;  // The digits.
+};
+
+Counter& Counter::operator++()
+{
+    // Adjust m_sum to avoid the need to sum over the digits.
+    for (auto& x : m_v)
     {
-        if (x < max)
+        if (x < m_high)
         {
             ++x;
-            return true;
+            ++m_sum;
+            return *this;
         }
-        x = min;
+        x = m_low;
+        m_sum -= m_high - m_low;
     }
-    return false;
+    m_overflow = true;
+    return *this;
 }
 
 std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
@@ -41,16 +77,15 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
         return walls;
 
     // Iterate over a flat vector of all the brick widths.
-    std::vector<int> widths(n_rows*n_bricks, 1);
-    do
+    for (Counter widths(n_rows*n_bricks, 1, widest_brick); !widths.overflow(); ++widths)
     {
         // Use revere iterators to place most significant (slowest changing) bricks first.
-        Wall wall{Row{0, std::vector(widths.crbegin(), widths.crbegin() + n_bricks)}};
+        Wall wall{Row{0, std::vector(widths.rbegin(), widths.rbegin() + n_bricks)}};
         for (auto row_num{1}; row_num < n_rows; ++row_num)
         {
             Row row{row_num % 2,
-                std::vector(widths.crbegin() + row_num*n_bricks,
-                            widths.crbegin() + (row_num + 1)*n_bricks)};
+                std::vector(widths.rbegin() + row_num*n_bricks,
+                            widths.rbegin() + (row_num + 1)*n_bricks)};
             // Add this row if it fits with the previous row.
             if (is_brickwork(row, wall.back()))
             {
@@ -64,41 +99,30 @@ std::vector<Wall> generate(int n_rows, int n_bricks, int widest_brick)
         if (static_cast<int>(wall.size()) == n_rows
             && is_brickwork(wall.front(), wall.back()))
             walls.push_back(wall);
-    } while (increment(widths, 1, widest_brick));
+    }
     return walls;
 }
-#include <iostream>
+
 int num_brickworks(int n_rows, int n_bricks, int widest_brick)
 {
     assert(n_rows == 2 && "Calculation has not been generalized.");
 
-    auto is_wall = [](std::vector<int> const& xs, std::vector<int> const& ys) {
-        auto X{std::accumulate(xs.begin(), xs.end(), 0)};
-        auto Y{std::accumulate(ys.begin(), ys.end(), 0)};
-        auto const d{std::gcd(X, Y)};
-        std::size_t i{0};
-
-        for (auto x{0}; i < xs.size(); x += xs[i++])
-        {
-            std::size_t j{0};
-            for (auto y{0}; j < ys.size(); y += ys[j++])
+    auto is_wall = [](auto const& xs, auto const& ys) {
+        auto const d{std::gcd(xs.sum(), ys.sum())};
+        auto const i_max{static_cast<int>(xs.size())};
+        auto const j_max{static_cast<int>(ys.size())};
+        for (auto i{0}, x{0}; i < i_max; x += xs[i++])
+            for (auto j{0}, y{0}; j < j_max; y += ys[j++])
                 if ((1 - x + y) % d == 0)
                     return false;
-        }
         return true;
     };
 
     auto out{0};
-    std::vector<int> x_widths(n_bricks, 1);
-    do
-    {
-        std::vector<int> y_widths(n_bricks, 1);
-        do
-        {
+    for(Counter x_widths(n_bricks, 1, widest_brick); !x_widths.overflow(); ++x_widths)
+        for(Counter y_widths(n_bricks, 1, widest_brick); !y_widths.overflow(); ++y_widths)
             if (is_wall(x_widths, y_widths))
                 ++out;
-        } while (increment(y_widths, 1, widest_brick));
-    } while (increment(x_widths, 1, widest_brick));
     return out;
 }
 
